@@ -1,0 +1,18 @@
+{
+  "_comment": "Synthetic worked example \u2014 NOT a real pull. Safe to publish. Reproduces MoCHi's exact provably-fair math for mugen_grail.",
+  "pack": "mugen_grail",
+  "server_seed": "d3m0000000000000000000000000000000000000000000000000000000000000",
+  "server_seed_hash": "b97ac859f5247e68ffa83dd10a728395174a6c29a65dd0f6d0fd8406206d57b1",
+  "client_seed": "i-love-mochi",
+  "nonce": 4,
+  "roll_hash": "b00e9e26f9c275de696d0ef7423083a6542509b32c7c3b3e3af5c86e84ad52ed",
+  "roll_value": 9709,
+  "base_rarity": "SUR",
+  "rates": {
+    "R": 0.82,
+    "SR": 0.1,
+    "SSR": 0.05,
+    "SUR": 0.02,
+    "EX": 0.01
+  }
+}

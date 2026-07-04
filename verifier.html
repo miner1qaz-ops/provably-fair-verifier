@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MoCHi Provably-Fair Verifier — check any pull yourself</title>
+<meta name="description" content="Independently verify that a MoCHi gacha pull was fair. Runs entirely in your browser using standard SHA-256. Open source." />
+<style>
+  :root{
+    --bg:#0b0f1a; --panel:#141a2b; --panel2:#1b2238; --ink:#e8ecf5; --muted:#9aa3bd;
+    --line:#283150; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#3b82f6; --gold:#eab308;
+    --r1:#94a3b8; --r2:#38bdf8; --r3:#a855f7; --r4:#f472b6; --r5:#fbbf24;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:880px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:1.7rem;margin:0 0 4px;letter-spacing:-.5px}
+  h2{font-size:1.15rem;margin:28px 0 10px;color:#fff}
+  h3{font-size:1rem;margin:20px 0 8px;color:#cdd5ea}
+  p{margin:0 0 12px}
+  .muted{color:var(--muted)}
+  .tag{display:inline-block;font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:999px;background:#1f2a44;color:#9ec5ff;border:1px solid #2c3a5e;margin-right:6px}
+  .trust{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+  .panel.alt{background:var(--panel2)}
+  label{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 4px;font-weight:600}
+  input,select{width:100%;background:#0e1424;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px 12px;font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9rem}
+  input:focus,select:focus{outline:none;border-color:var(--blue)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  @media(max-width:620px){.grid{grid-template-columns:1fr}}
+  button{cursor:pointer;font:inherit;font-weight:700;border:none;border-radius:10px;padding:13px 22px;color:#fff;background:linear-gradient(180deg,#3b82f6,#2563eb)}
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:#1f2a44;color:#cdd5ea;border:1px solid var(--line)}
+  details{margin-top:14px}
+  summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:.9rem}
+  .checks{margin:16px 0}
+  .row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:#0e1424;border:1px solid var(--line);margin-bottom:8px;font-family:ui-monospace,monospace;font-size:.85rem}
+  .row .mark{font-size:1.1rem;width:24px;text-align:center;flex-shrink:0}
+  .row.pass{border-color:#1f4d2e}.row.fail{border-color:#5b1f1f}
+  .row .label{flex:1;color:#cdd5ea}
+  .summary{font-size:1.15rem;font-weight:700;padding:14px 16px;border-radius:11px;margin:8px 0 4px;text-align:center}
+  .summary.ok{background:#0f2a18;color:#7ef0a6;border:1px solid #1f4d2e}
+  .summary.bad{background:#2a1010;color:#ff9b9b;border:1px solid #5b1f1f}
+  .summary.info{background:#101a2a;color:#9ec5ff;border:1px solid #23395e}
+  .rarity{display:inline-block;padding:1px 9px;border-radius:6px;font-weight:700;font-size:.82rem;color:#0b0f1a}
+  .r-R{background:var(--r1);color:#0b0f1a}.r-SR{background:var(--r2)}.r-SSR{background:var(--r3)}.r-SUR{background:var(--r4)}.r-EX{background:var(--r5)}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .hex{font-size:.78rem;word-break:break-all;color:var(--muted)}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  .steps li{counter-increment:s;padding:10px 0 10px 40px;position:relative}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;background:#1f2a44;border:1px solid #2c3a5e;border-radius:50%;text-align:center;line-height:24px;font-weight:700;font-size:.85rem;color:#9ec5ff}
+  .ingr{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .ingr .chip{flex:1;min-width:150px;background:#0e1424;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .ingr .chip b{display:block;color:#fff}
+  .ingr .chip small{color:var(--muted)}
+  .footer{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.82rem}
+  a{color:#6ea8ff}
+  .formula{background:#0e1424;border:1px solid var(--line);border-radius:9px;padding:12px;font-family:ui-monospace,monospace;font-size:.85rem;overflow-x:auto}
+  pre{background:#0e1424;border:1px solid var(--line);border-radius:9px;padding:12px;overflow-x:auto;font-size:.8rem}
+  .hint{font-size:.78rem;color:var(--muted);margin-top:4px}
+  .bands{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+  .band{display:flex;justify-content:space-between;font-size:.78rem;font-family:ui-monospace,monospace;color:var(--muted);padding:2px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🔐 MoCHi Provably-Fair Verifier</h1>
+  <p class="muted">Check that any MoCHi pull was honest — using nothing but standard SHA-256 math.</p>
+  <div class="trust">
+    <span class="tag">✅ Runs 100% in your browser</span>
+    <span class="tag">🔓 Open source (MIT)</span>
+    <span class="tag">🚫 Nothing is uploaded</span>
+    <span class="tag">📐 Universal SHA-256</span>
+  </div>
+
+  <!-- ───────────── HOW IT WORKS ───────────── -->
+  <div class="panel alt">
+    <h2>How MoCHi fairness works (in plain English)</h2>
+    <p>Before you pull, MoCHi locks a secret ("server seed") and shows you only its
+      <b>fingerprint</b> (a SHA-256 hash). It cannot change the secret after that, or the fingerprint would change.
+      Your pull is then decided by three ingredients:</p>
+    <div class="ingr">
+      <div class="chip"><b>🔑 Server seed</b><small>MoCHi's secret. Locked before you pull, revealed after you rotate.</small></div>
+      <div class="chip"><b>🎲 Lucky phrase</b><small>Your client seed. Yours to set.</small></div>
+      <div class="chip"><b>#️⃣ Nonce</b><small>The pull number: 0, 1, 2… (just a counter).</small></div>
+    </div>
+    <p class="formula">roll = SHA-256("server_seed : client_seed : nonce") → a number 0–9999 → rarity tier (R / SR / SSR / SUR / EX)</p>
+    <p class="muted">After you rotate your seed, MoCHi reveals the plaintext secret. You can then re-do the math
+      yourself — here, or with <i>any</i> SHA-256 calculator — and confirm the result matches. Because SHA-256 is
+      one-way and the secret was locked before your pull, nobody could have rigged it.</p>
+  </div>
+
+  <!-- ───────────── THE VERIFIER ───────────── -->
+  <div class="panel">
+    <h2>Verify a pull</h2>
+
+    <label for="pack">1. Pick your pack</label>
+    <select id="pack"><option value="">Loading live pack rates…</option></select>
+    <div id="bands" class="bands"></div>
+
+    <label for="ss">2. Revealed server seed <span class="muted">(plaintext — shown after you rotate)</span></label>
+    <input id="ss" placeholder="e.g. 2b83d867f336…" autocomplete="off" />
+
+    <label for="cs">3. Your Lucky phrase (client seed)</label>
+    <input id="cs" placeholder="e.g. my-lucky-phrase" autocomplete="off" />
+
+    <label for="nn">4. Nonce (pull number)</label>
+    <input id="nn" type="number" placeholder="e.g. 0" autocomplete="off" />
+
+    <details>
+      <summary>Compare to your MoCHi receipt (optional — needed for full proof)</summary>
+      <p class="hint">These come from the "History" tab on MoCHi's verify page. Paste them to prove your stored receipt matches the math.</p>
+      <div class="grid">
+        <div>
+          <label for="cmt">Server-seed fingerprint (committed hash)</label>
+          <input id="cmt" placeholder="the hash shown BEFORE the pull" autocomplete="off" />
+        </div>
+        <div>
+          <label for="rh">Roll hash (from your receipt)</label>
+          <input id="rh" autocomplete="off" />
+        </div>
+        <div>
+          <label for="rv">Roll value (from your receipt)</label>
+          <input id="rv" type="number" autocomplete="off" />
+        </div>
+        <div>
+          <label for="br">Base rarity (from your receipt)</label>
+          <input id="br" placeholder="R / SR / SSR / SUR / EX" autocomplete="off" />
+        </div>
+      </div>
+    </details>
+
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button id="verify">Verify pull</button>
+      <button class="ghost" id="loadex">Load example</button>
+      <span id="fetchstat" class="muted" style="font-size:.8rem"></span>
+    </div>
+
+    <div id="out" class="checks" hidden></div>
+  </div>
+
+  <!-- ───────────── STEP BY STEP ───────────── -->
+  <div class="panel alt">
+    <h2>How to get these numbers from MoCHi</h2>
+    <ol class="steps">
+      <li><b>Open a pack</b> on getmochi.fun. You can't verify it yet — the secret is still locked.</li>
+      <li><b>Go to the verify page → "Seeds" tab → "Rotate Server Seed"</b> and confirm. This reveals the old secret.</li>
+      <li><b>Open the "History" tab</b> and click the pull you want to check. It shows the <span class="mono">revealed server seed</span>, your <span class="mono">client seed</span>, the <span class="mono">nonce</span>, the <span class="mono">roll hash</span>, <span class="mono">roll value</span> and <span class="mono">base rarity</span>.</li>
+      <li><b>Paste them above</b> and hit <b>Verify</b>. Green ✅ = honest pull.</li>
+    </ol>
+    <p class="muted">Tip: you can verify any past pull this way — not just the latest one.</p>
+  </div>
+
+  <!-- ───────────── HONEST LIMITATIONS ───────────── -->
+  <div class="panel">
+    <h2>What this can &amp; can't prove</h2>
+    <h3 style="color:#7ef0a6">✅ Can prove</h3>
+    <p>The <b>rarity tier</b> of your pull (R / SR / SSR / SUR / EX) was decided honestly from
+      (server seed + your phrase + nonce), and MoCHi did not swap its committed secret. That is the
+      provably-fair claim.</p>
+    <h3 style="color:#ffce80">🟡 Cannot prove (stated openly)</h3>
+    <p>• <b>Which specific card</b> you got within that tier — that pick depends on live inventory and is
+      not part of the hash. (This is the same transparency gap every gacha has.)</p>
+    <p>• The <b>Fortune "soft pity" upgrade</b> — its hash needs pity-counter values that aren't included
+      in the pull data, so it is server-attested rather than independently reproducible. Hard-pity upgrades
+      are deterministic (no hash).</p>
+    <p class="muted">In short: <b>provably-fair rarity</b>, honestly scoped — never "provably-fair everything."</p>
+  </div>
+
+  <!-- ───────────── CODE ───────────── -->
+  <div class="panel alt">
+    <h2>Prefer code? Verify with Python or Node</h2>
+    <p class="muted">The full open-source verifier (Python, Node, this page, and the exact spec) lives in the public repo:</p>
+    <p><a id="ghrepo" href="#">github.com/getmochi/provably-fair-verifier</a> <span class="muted">(publish pending)</span></p>
+    <pre>python3 verify.py examples/sample-pull.json   # or pass --server-seed --client-seed --nonce --pack</pre>
+  </div>
+
+  <div class="footer">
+    MoCHi Provably-Fair Verifier · open source under the MIT license ·
+    the algorithm is <a href="https://getmochi.fun/gacha/verify">documented on MoCHi</a> ·
+    this page is a single static HTML file — view its source and read it yourself.
+  </div>
+</div>
+
+<script>
+"use strict";
+// ─── Exact reproduction of MoCHi backend/main.py: provably_fair_roll + roll_to_rarity ───
+const RARITY = ["R","SR","SSR","SUR","EX"];
+// Same-origin on getmochi.fun (the live packs API is proxied at /api/public/packs).
+// On any other host (GitHub Pages, your own copy) try the absolute URL; if CORS blocks it,
+// the page falls back to manual rate entry — see enableManualRates().
+const PACKS_URL = location.hostname.endsWith("getmochi.fun")
+  ? "/api/public/packs"
+  : "https://getmochi.fun/api/public/packs";
+
+async function sha256Hex(str){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function rollValue(hashHex){ return Number(BigInt("0x"+hashHex) % 10000n); } // int(hash,16) % 10000
+function rollToRarity(rv, rates){
+  let cum = 0.0;
+  for(const r of RARITY){
+    cum += Number(rates[r] || 0);
+    const thr = Math.trunc(cum * 10000); // truncate, NOT round (matches Python int())
+    if(rv < thr) return r;
+  }
+  return RARITY[RARITY.length-1];
+}
+
+const PACKS = {}; // id -> {name, rates, hasPity, tiers}
+async function loadPacks(){
+  const stat = document.getElementById("fetchstat");
+  const sel = document.getElementById("pack");
+  try{
+    const r = await fetch(PACKS_URL, {cache:"no-store"});
+    if(!r.ok) throw new Error(r.status);
+    const list = await r.json();
+    sel.innerHTML = "";
+    for(const p of list){
+      if(!p.rates) continue;
+      const id = p.id || (p.href||"").split("/").filter(Boolean).pop();
+      PACKS[id] = {name:p.name||id, rates:p.rates, hasPity:!!p.has_pity, tiers:p.tiers||[]};
+      const o = document.createElement("option");
+      o.value = id; o.textContent = p.name || id;
+      sel.appendChild(o);
+    }
+    stat.textContent = "✓ live rates loaded";
+    renderBands();
+  }catch(e){
+    sel.innerHTML = "<option value=''>Manual rates — type below</option>";
+    stat.textContent = "⚠ could not fetch live rates (" + e.message + ") — enter rates manually";
+    enableManualRates();
+  }
+}
+function enableManualRates(){
+  // fall back to manual rate entry if the public API isn't reachable (e.g. hosted elsewhere / CORS)
+  const bands = document.getElementById("bands");
+  bands.innerHTML = RARITY.map(r =>
+    `<div class="band"><span>rate_${r.toLowerCase()}</span><input id="rate_${r}" style="max-width:90px" placeholder="e.g. 0.84" /></div>`
+  ).join("");
+}
+function getRates(){
+  const sel = document.getElementById("pack").value;
+  if(PACKS[sel]) return PACKS[sel].rates;
+  // manual
+  const out = {};
+  for(const r of RARITY){ const v = parseFloat(document.getElementById("rate_"+r).value); out[r] = isNaN(v)?0:v; }
+  return out;
+}
+function renderBands(){
+  const sel = document.getElementById("pack").value;
+  const bands = document.getElementById("bands");
+  const p = PACKS[sel];
+  if(!p || !p.tiers || !p.tiers.length){ bands.innerHTML = ""; return; }
+  bands.innerHTML = p.tiers.map(t =>
+    `<div class="band"><span class="rarity r-${t.rarity}" style="font-size:.72rem;padding:0 6px">${t.rarity}</span>` +
+    `<span>rate ${(t.rate*100).toFixed(0)}% · band $${t.min}–$${t.max}</span></div>`
+  ).join("");
+}
+
+// example values match examples/sample-pull.json (synthetic, safe)
+const EXAMPLE = {
+  pack:"mugen_grail",
+  ss:"d3m0000000000000000000000000000000000000000000000000000000000000",
+  cs:"i-love-mochi", nn:4,
+  cmt:"b97ac859f5247e68ffa83dd10a728395174a6c29a65dd0f6d0fd8406206d57b1",
+  rh:"b00e9e26f9c275de696d0ef7423083a6542509b32c7c3b3e3af5c86e84ad52ed",
+  rv:9709, br:"SUR"
+};
+
+async function runVerify(){
+  const out = document.getElementById("out");
+  out.hidden = false; out.innerHTML = '<div class="summary info">⏳ Computing SHA-256 in your browser…</div>';
+
+  const ss = document.getElementById("ss").value.trim();
+  const cs = document.getElementById("cs").value.trim();
+  const nn = document.getElementById("nn").value.trim();
+  const cmt = document.getElementById("cmt").value.trim();
+  const rh = document.getElementById("rh").value.trim();
+  const rv = document.getElementById("rv").value.trim();
+  const br = document.getElementById("br").value.trim().toUpperCase();
+
+  if(!ss || !cs || nn===""){ out.innerHTML = '<div class="summary bad">Please fill in the revealed server seed, your client seed, and the nonce.</div>'; return; }
+  const rates = getRates();
+  const sumOk = Object.values(rates).reduce((a,b)=>a+Number(b||0),0);
+  if(sumOk <= 0){ out.innerHTML = '<div class="summary bad">No pack rates available — pick a pack or enter rates manually.</div>'; return; }
+
+  // recompute
+  const computedHash = await sha256Hex(`${ss}:${cs}:${nn}`);
+  const computedRoll = rollValue(computedHash);
+  const computedRarity = rollToRarity(computedRoll, rates);
+  const riggingHash = await sha256Hex(ss);
+
+  const checks = [];
+  // rigging check (only if committed fingerprint supplied)
+  if(cmt) checks.push(["Server-seed fingerprint (rigging check)", riggingHash===cmt, riggingHash, cmt]);
+  // honesty / derivation / rarity (only if receipt values supplied)
+  if(rh) checks.push(["Roll hash matches receipt", computedHash===rh, computedHash, rh]);
+  if(rv!=="") checks.push(["Roll value matches receipt", computedRoll===Number(rv), computedRoll, rv]);
+  if(br) checks.push(["Rarity matches receipt", computedRarity===br, computedRarity, br]);
+
+  let html = `<div class="summary info">Computed roll: <b>${computedRoll}</b> / 9999 → ` +
+             `<span class="rarity r-${computedRarity}">${computedRarity}</span></div>`;
+
+  if(checks.length===0){
+    html += '<div class="summary info">ℹ️ Recomputed values shown above. Paste your receipt (collapsible section) to confirm a full match.</div>';
+  }else{
+    const allPass = checks.every(c=>c[1]);
+    html += `<div class="summary ${allPass?"ok":"bad"}">${allPass?"✅ ALL CHECKS PASSED — this pull's rarity was decided honestly":"❌ MISMATCH — see below"}</div>`;
+    for(const [name,pass,comp,exp] of checks){
+      html += `<div class="row ${pass?"pass":"fail"}"><span class="mark">${pass?"✅":"❌"}</span>` +
+              `<span class="label">${name}${pass?"":`<br><span class="hex">computed: ${comp}<br>expected: ${exp}</span>`}</span></div>`;
+    }
+    if(allPass) html += '<p class="muted" style="margin-top:10px">This proves MoCHi used the exact committed secret and computed the rarity honestly. The roll→rarity is verifiable; the specific card within the tier is not (see below).</p>';
+  }
+  out.innerHTML = html;
+}
+
+document.getElementById("verify").addEventListener("click", runVerify);
+document.getElementById("loadex").addEventListener("click", ()=>{
+  document.getElementById("pack").value = EXAMPLE.pack;
+  document.getElementById("ss").value = EXAMPLE.ss;
+  document.getElementById("cs").value = EXAMPLE.cs;
+  document.getElementById("nn").value = EXAMPLE.nn;
+  document.getElementById("cmt").value = EXAMPLE.cmt;
+  document.getElementById("rh").value = EXAMPLE.rh;
+  document.getElementById("rv").value = EXAMPLE.rv;
+  document.getElementById("br").value = EXAMPLE.br;
+  runVerify();
+});
+document.getElementById("pack").addEventListener("change", renderBands);
+loadPacks();
+</script>
+</body>
+</html>
