@@ -123,6 +123,29 @@ future.
 
 ---
 
+## Integrity (prove this page wasn't secretly swapped)
+
+A live verifier on the operator's own site can be quietly changed at any time. To remove
+that doubt, the footer of `verifier.html` carries a **version** (`v1.0.0`), and each release
+publishes the **SHA-256** of the exact file. You can recompute it yourself and compare:
+
+```bash
+# Fetch the live page and hash it — must match the value below for v1.0.0
+curl -s https://getmochi.fun/fairness | sha256sum
+```
+
+**v1.0.0 — `verifier.html` SHA-256:**
+```
+e62fdd8b0c13171ffe3564cdf1b3263a28f9e0aa1d464f598e755461c9315398
+```
+
+If the live page ever differs from this hash, either MoCHi shipped a new version (check the
+footer version + this file for a new entry) or the page was tampered with. The pinned copy on
+[GitHub Pages](https://miner1qaz-ops.github.io/provably-fair-verifier/verifier.html) is
+served straight from this tagged release and is the reference an independent party should use.
+
+---
+
 ## License
 
 MIT — see [`LICENSE`](LICENSE). Use it, fork it, host it, audit it.
