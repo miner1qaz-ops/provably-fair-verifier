@@ -80,6 +80,11 @@
     <p>Before you pull, MoCHi locks a secret ("server seed") and shows you only its
       <b>fingerprint</b> (a SHA-256 hash). It cannot change the secret after that, or the fingerprint would change.
       Your pull is then decided by three ingredients:</p>
+    <p style="background:#0e1424;border-left:3px solid var(--blue);padding:10px 14px;border-radius:6px;font-size:.92rem;margin:10px 0">
+      <b>What's SHA-256?</b> A 30-year-old math formula that secures banks and Bitcoin. It turns any text into a
+      unique fingerprint, and <b>no one — not even MoCHi — can run it backwards</b>. That one-way math is the whole
+      reason "provably fair" is even possible.
+    </p>
     <div class="ingr">
       <div class="chip"><b>🔑 Server seed</b><small>MoCHi's secret. Locked before you pull, revealed after you rotate.</small></div>
       <div class="chip"><b>🎲 Lucky phrase</b><small>Your client seed. Yours to set.</small></div>
@@ -133,7 +138,8 @@
 
     <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <button id="verify">Verify pull</button>
-      <button class="ghost" id="loadex">Load example</button>
+      <button class="ghost" id="loadex">🟢 Load example (passes)</button>
+      <button class="ghost" id="loadwrong">🔴 Load wrong example (fails)</button>
       <span id="fetchstat" class="muted" style="font-size:.8rem"></span>
     </div>
 
@@ -162,9 +168,6 @@
     <h3 style="color:#ffce80">🟡 Cannot prove (stated openly)</h3>
     <p>• <b>Which specific card</b> you got within that tier — that pick depends on live inventory and is
       not part of the hash. (This is the same transparency gap every gacha has.)</p>
-    <p>• The <b>Fortune "soft pity" upgrade</b> — its hash needs pity-counter values that aren't included
-      in the pull data, so it is server-attested rather than independently reproducible. Hard-pity upgrades
-      are deterministic (no hash).</p>
     <p class="muted">In short: <b>provably-fair rarity</b>, honestly scoped — never "provably-fair everything."</p>
   </div>
 
@@ -322,6 +325,20 @@ document.getElementById("verify").addEventListener("click", runVerify);
 document.getElementById("loadex").addEventListener("click", ()=>{
   document.getElementById("pack").value = EXAMPLE.pack;
   document.getElementById("ss").value = EXAMPLE.ss;
+  document.getElementById("cs").value = EXAMPLE.cs;
+  document.getElementById("nn").value = EXAMPLE.nn;
+  document.getElementById("cmt").value = EXAMPLE.cmt;
+  document.getElementById("rh").value = EXAMPLE.rh;
+  document.getElementById("rv").value = EXAMPLE.rv;
+  document.getElementById("br").value = EXAMPLE.br;
+  runVerify();
+});
+document.getElementById("loadwrong").addEventListener("click", ()=>{
+  // Same as the good example, but ONE digit of the seed is corrupted — so every check FAILS.
+  // Lets a skeptic see the red ❌ path and trust that the green ✅ path is real.
+  document.getElementById("pack").value = EXAMPLE.pack;
+  const badSeed = EXAMPLE.ss.slice(0, -1) + (EXAMPLE.ss.slice(-1) === "0" ? "1" : "0");
+  document.getElementById("ss").value = badSeed;
   document.getElementById("cs").value = EXAMPLE.cs;
   document.getElementById("nn").value = EXAMPLE.nn;
   document.getElementById("cmt").value = EXAMPLE.cmt;
